@@ -3,7 +3,6 @@ import json
 from datetime import datetime
 from datetime import timedelta
 import pandas as pd
-import time
 import streamlit as st
 from PIL import Image
 
@@ -72,9 +71,9 @@ def param(df_ville_origine,df_ville_destination):
      st.sidebar.write(" ")
      st.sidebar.write(" ")
      st.sidebar.write(" ")
-     st.sidebar.write("Mise à jour des trains tous les jours vers 9h !")
+     st.sidebar.write("Me contacter [Linkedin](https://www.linkedin.com/in/pierre-louis-danieau/)")
      st.sidebar.write(" ")
-     st.sidebar.write("**Développé par Pierre-Louis Danieau**")
+     st.sidebar.write("**©️ Copyright 2022 - Pierre-Louis Danieau**")
 
      return option_origine,option_destination,option_date,bouton_launch_search
 
@@ -122,10 +121,10 @@ if __name__ == "__main__":
      col1_first, col2_first = st.columns(2)
 
      with col1_first:
-          st.markdown("<h2 style='text-align: center; color: RoyalBlue;'>Maxplorateur App</h2>", unsafe_allow_html=True)
+          st.markdown("<h2 style='color: RoyalBlue;'>Maxplorateur App</h2>", unsafe_allow_html=True)
           st.write("""
                **L'ensemble des trains éligibles à l'abonnement TGV max en un seul endroit !**
-
+               
                Définissez vos critères dans la barre de gauche !
                """)
 
@@ -135,7 +134,6 @@ if __name__ == "__main__":
      
      st.write(' ')
      col1, col2, col3 = st.columns(3)
-
 
 
      df_ville_origine = pd.read_csv('ville_origine.csv')
@@ -154,16 +152,65 @@ if __name__ == "__main__":
           df_train_filter = dataframe_train(option_origine,option_destination,option_date)
           if df_train_filter.shape[0] == 0:
                st.write(' ')
+               st.markdown("<h4 style='text-align: center; color: RoyalBlue;'>Mince..  🙁 </h4>", unsafe_allow_html=True)
+               st.markdown("<h4 style='text-align: center; color: RoyalBlue;'>Aucun trains de prévus en TGV max pour l'instant avec ces critères.</h4>", unsafe_allow_html=True)
+               st.markdown("<h6 style='text-align: center; color: RoyalBlue;'>Réessaye demain vers 9h-10h ! .</h6>", unsafe_allow_html=True)
                st.write(' ')
                st.write(' ')
-               st.markdown("<h4 style='text-align: center; color: RoyalBlue;'>Aucun trains de prévus en TGV max pour l'instant. </h4>", unsafe_allow_html=True)
-               formulaire()
+               with st.expander("🚆 Informations importantes sur les trains"):
+                    st.write("""
+                    ⚠️ Les trains affichés sont les trains **élligibles** à l'abonnement TGV Max. 
+
+                    Cependant, il arrive (de temps en temps) que le prix du billet ne soit tout de même pas à 0 € sur le site de la SNCF. 
+
+                    En effet, lorsque la demande est trop élevée, la SNCF fait payer les places alors même que le train est éligible à TGV Max.
+
+                    De plus les données de l'application sont mise à jour tous les matins vers 9h. Si vous vous connectez trop tardivement dans la journée, il se peut que les places ne soient plus disponibles.
+
+                    Je suis actuellement en train de résoudre ces problèmes pour : 
+
+                         - Afficher uniquement les places à 0 €
+                    
+                         - Mise à jour plusieurs fois par jours des trains.
+                    
+                         - Mise en place d'une alerte par mail lorsqu'un une place est disponible.
+                    
+                    Partager ou parler autour de vous de cette application me permettra de gagner en visibilité auprès de la SNCF afin d'obtenir davantage de données sur les trains TGV Max et ainsi améliorer l'app !
+                    
+                    Merci beaucoup 🙂
+                    """)
+               with st.expander("📧 Recevez une alerte par mail lorsque qu'une place se libère !"):
+                    formulaire()
 
           else:
-               st.markdown("<h4 style='color: Black;'>Liste des trains :  </h4>", unsafe_allow_html=True)
+               st.markdown("<h4 style='color: RoyalBlue;'>Voici la liste des trains dispos :  🎉🎉🎉</h4>", unsafe_allow_html=True)
                df_train_filter.columns = ["Origine", "Destination", "Date", "Heure de départ", "Heure d'arrivée"]
                st.dataframe(df_train_filter, 1000)
-               formulaire()
+               st.write(' ')
+               with st.expander("🚆 Informations importantes sur les trains"):
+                    st.write("""
+                    ⚠️ Les trains affichés sont les trains **élligibles** à l'abonnement TGV Max. 
+
+                    Cependant, il arrive (de temps en temps) que le prix du billet ne soit tout de même pas à 0 € sur le site de la SNCF. 
+
+                    En effet, lorsque la demande est trop élevée, la SNCF fait payer les places alors même que le train est éligible à TGV Max.
+
+                    De plus les données de l'application sont mise à jour tous les matins vers 9h. Si vous vous connectez trop tardivement dans la journée, il se peut que les places ne soient plus disponibles.
+
+                    Je suis actuellement en train de résoudre ces problèmes pour : 
+
+                         - Afficher uniquement les places à 0 €
+                    
+                         - Mise à jour plusieurs fois par jours des trains.
+                    
+                         - Mise en place d'une alerte par mail lorsqu'un une place est disponible.
+                    
+                    Partager ou parler autour de vous de cette application me permettra de gagner en visibilité auprès de la SNCF afin d'obtenir davantage de données sur les trains TGV Max et ainsi améliorer l'app !
+                    
+                    Merci beaucoup 🙂
+                    """)
+               with st.expander("📧 Recevez une alerte par mail lorsque qu'une place se libère !"):
+                    formulaire()
 
 
 
@@ -176,4 +223,3 @@ if __name__ == "__main__":
           with col3:
                st.subheader('Date')
                st.write(option_date, ' : aaaa-mm-jj ')
-
