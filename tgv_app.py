@@ -126,7 +126,7 @@ if __name__ == "__main__":
           st.write("""
                L'ensemble des trains éligibles à l'abonnement TGV max en un seul endroit ! 
 
-               Définissez vos critères dans la barre de gauche. 
+               Définissez vos critères dans la barre de gauche !
                """)
 
           
