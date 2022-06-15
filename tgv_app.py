@@ -122,9 +122,9 @@ if __name__ == "__main__":
      col1_first, col2_first = st.columns(2)
 
      with col1_first:
-          st.markdown("<h2 style='text-align: center; color: RoyalBlue;'>TGV max Web App</h2>", unsafe_allow_html=True)
+          st.markdown("<h2 style='text-align: center; color: RoyalBlue;'>Maxplorateur App</h2>", unsafe_allow_html=True)
           st.write("""
-               L'ensemble des trains éligibles à l'abonnement TGV max en un seul endroit ! 
+               **L'ensemble des trains éligibles à l'abonnement TGV max en un seul endroit !**
 
                Définissez vos critères dans la barre de gauche !
                """)
