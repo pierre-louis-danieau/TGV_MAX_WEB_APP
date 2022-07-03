@@ -161,8 +161,8 @@ if __name__ == "__main__":
      col1, col2, col3 = st.columns(3)
 
 
-     df_ville_origine = pd.read_csv('/Users/pierre-louis.danieau/Documents/perso/TGV_max_project/ville_origine.csv')
-     df_ville_destination = pd.read_csv('/Users/pierre-louis.danieau/Documents/perso/TGV_max_project/ville_destination.csv')
+     df_ville_origine = pd.read_csv('ville_origine.csv')
+     df_ville_destination = pd.read_csv('ville_destination.csv')
      del df_ville_origine['Unnamed: 0']
      del df_ville_destination['Unnamed: 0']
 
