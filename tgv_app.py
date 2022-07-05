@@ -153,7 +153,7 @@ if __name__ == "__main__":
                
                Définissez vos critères dans la barre de gauche !
                """)
-          st.markdown("<p style='color: RoyalBlue;'>Mise à jour des trains le : {} </p>".format(str_maj), unsafe_allow_html=True)
+          #st.markdown("<p style='color: RoyalBlue;'>Mise à jour des trains le : {} </p>".format(str_maj), unsafe_allow_html=True)
 
 
           
