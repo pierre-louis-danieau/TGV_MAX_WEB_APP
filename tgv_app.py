@@ -7,7 +7,7 @@ import streamlit as st
 from PIL import Image
 from dateutil import parser
 import locale
-from streamlit.scriptrunner import get_script_run_ctx as get_report_ctx
+#from streamlit.scriptrunner import get_script_run_ctx as get_report_ctx
 
 
 
@@ -53,17 +53,17 @@ def param(df_ville_origine,df_ville_destination):
 
      return option_origine,option_destination,option_date,all_dates,bouton_launch_search
 
-@st.cache
-def mis_a_jour(id):
-     locale.setlocale(locale.LC_TIME,'')
-     url = "https://ressources.data.sncf.com/api/records/1.0/search/?dataset=tgvmax&q=&rows=1&sort=-date&facet=date&facet=origine&facet=destination&facet=od_happy_card"
-     response_API_tgv = requests.get(url)
-     data = response_API_tgv.text
-     parse_json = json.loads(data)
-     mis_a_jour= parse_json['records'][0]['record_timestamp']
-     mis_a_jour_date = parser.parse(mis_a_jour)
-     str_maj = mis_a_jour_date.strftime("%A %d %B %Y à %H:%M")
-     return str_maj
+#@st.cache
+#def mis_a_jour(id):
+#     locale.setlocale(locale.LC_TIME,'')
+#     url = "https://ressources.data.sncf.com/api/records/1.0/search/?dataset=tgvmax&q=&rows=1&sort=-date&facet=date&facet=origine&facet=destination&facet=od_happy_card"
+#     response_API_tgv = requests.get(url)
+#     data = response_API_tgv.text
+#     parse_json = json.loads(data)
+#     mis_a_jour= parse_json['records'][0]['record_timestamp']
+#     mis_a_jour_date = parser.parse(mis_a_jour)
+#     str_maj = mis_a_jour_date.strftime("%A %d %B %Y à %H:%M")
+#     return str_maj
 
 def dataframe_train(option_origine,option_destination,option_date,all_dates):
      day = option_date.day
@@ -140,11 +140,11 @@ if __name__ == "__main__":
 
      image = Image.open('photo_train.jpg')
      
-     ctx = get_report_ctx()
-     id = ctx.session_id
+     #ctx = get_report_ctx()
+     #id = ctx.session_id
      
      col1_first, col2_first = st.columns(2)
-     str_maj = mis_a_jour(id)
+     #str_maj = mis_a_jour(id)
 
      with col1_first:
           st.markdown("<h2 style='color: RoyalBlue;'>Maxplorateur App - Recherche</h2>", unsafe_allow_html=True)
