@@ -7,6 +7,7 @@ import streamlit as st
 from PIL import Image
 import locale
 from dateutil import parser
+from streamlit.scriptrunner import get_script_run_ctx as get_report_ctx
 
 
 
@@ -122,7 +123,7 @@ def update_counter():
     st.session_state.radio_change = True
 
 @st.cache
-def mis_a_jour():
+def mis_a_jour(id):
      locale.setlocale(locale.LC_TIME,'')
      url = "https://ressources.data.sncf.com/api/records/1.0/search/?dataset=tgvmax&q=&rows=1&sort=-date&facet=date&facet=origine&facet=destination&facet=od_happy_card"
      response_API_tgv = requests.get(url)
@@ -142,8 +143,11 @@ if __name__ == "__main__":
 
     image = Image.open('photo_train.jpg')
     col1_first, col2_first = st.columns(2)
+    
+    ctx = get_report_ctx()
+    id = ctx.session_id
 
-    str_maj = mis_a_jour()
+    str_maj = mis_a_jour(id)
 
     with col1_first:
         st.markdown("<h2 style='color: RoyalBlue;'>Maxplorateur App - Week end</h2>", unsafe_allow_html=True)
