@@ -154,6 +154,7 @@ if __name__ == "__main__":
                Définissez vos critères dans la barre de gauche !
                """)
           #st.markdown("<p style='color: RoyalBlue;'>Mise à jour des trains le : {} </p>".format(str_maj), unsafe_allow_html=True)
+          st.write("Ce site évolue et ne sera bientôt plus accessible via cet URL ! Pour continuer à chercher des TGV Max, connecte toi ici : [Maxplorateur](https://maxplorateur.com/) 😉")
 
 
           
