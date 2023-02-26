@@ -5,9 +5,8 @@ from datetime import timedelta
 import pandas as pd
 import streamlit as st
 from PIL import Image
-from dateutil import parser
 import locale
-#from streamlit.scriptrunner import get_script_run_ctx as get_report_ctx
+from pymongo import MongoClient
 
 
 
@@ -53,18 +52,6 @@ def param(df_ville_origine,df_ville_destination):
 
      return option_origine,option_destination,option_date,all_dates,bouton_launch_search
 
-#@st.cache
-#def mis_a_jour(id):
-#     locale.setlocale(locale.LC_TIME,'')
-#     url = "https://ressources.data.sncf.com/api/records/1.0/search/?dataset=tgvmax&q=&rows=1&sort=-date&facet=date&facet=origine&facet=destination&facet=od_happy_card"
-#     response_API_tgv = requests.get(url)
-#     data = response_API_tgv.text
-#     parse_json = json.loads(data)
-#     mis_a_jour= parse_json['records'][0]['record_timestamp']
-#     mis_a_jour_date = parser.parse(mis_a_jour)
-#     str_maj = mis_a_jour_date.strftime("%A %d %B %Y à %H:%M")
-#     return str_maj
-
 def dataframe_train(option_origine,option_destination,option_date,all_dates):
      day = option_date.day
      month = option_date.month
@@ -101,10 +88,52 @@ def dataframe_train(option_origine,option_destination,option_date,all_dates):
      df = df.reset_index(drop=True)
      return df
 
+def create_mail(records):
+     st.caption("Si tu souhaites recevoir une alerte par mail dès qu'une place se libère, renseigne ton adresse mail juste en-dessous ! :sunglasses:")
+     st.caption(f"Rappel de ta recherche :   Ville de départ ➡️ :blue[{option_origine}],   Ville d'arrivée ➡️ :blue[{option_destination}],   Date ➡️ :blue[{option_date}]")
+     email_type = st.text_input('Ton adresse email : ', key=1, value="", placeholder="prenom.nom@gmail.com")
+     if email_type != '':
+          find_another_alert = False
+          for alert_find in records.find({"email":email_type, 'ville_depart':option_origine, 'ville_destination':option_destination, 'date':option_date.strftime("%Y-%m-%d")}):
+               find_another_alert = True
+               break
+          
+          st.markdown(f"<p style='color: RoyalBlue; font-weight: bold;'>Super ! Tu recevras une alerte dès qu'un nouveau TGV Max sera dispo ! Check régulièrement tes mails sur : {email_type} 🙂</p>", unsafe_allow_html=True)
+          st.markdown("<p style='color: RoyalBlue; font-weight: bold;'>Tu peux également regarder la liste de tes alertes dans l'onglet : <i>L'ensemble de mes alertes</i> ! </p>", unsafe_allow_html=True)
+          st.balloons()
+          alert = {
+               'ville_depart':option_origine,
+               'ville_destination':option_destination,
+               'date':option_date.strftime("%Y-%m-%d"),
+               'email':email_type,
+               'time_added':datetime.now().strftime("%Y,%m,%d, %H:%M:%S")
+               
+          }
+          if not find_another_alert:
+               records.insert_one(alert)
+          else:
+               return
 
-def formulaire():
-    html='<iframe src="https://docs.google.com/forms/d/e/1FAIpQLSexZO8N0YxIQN0wKRdgyQSsI0Q-0xGk0a3A-aXpZBApBGdfqg/viewform?embedded=true" width="640" height="499" frameborder="0" marginheight="0" marginwidth="0">Chargement…</iframe>'
-    st.markdown(html, unsafe_allow_html=True)
+def check_mail(records):
+     st.caption("Si tu souhaites connaître l'ensemble de tes alertes en cours, renseigne ton adresse email juste en dessous ! :sunglasses:")
+     st.caption("Elles seront supprimées au bout de 30 jours ! ")
+     email_type = st.text_input('Ton adresse email : ', key=2, value="", placeholder="prenom.nom@gmail.com")
+     if email_type != '':
+          list_alert = []
+          find_alert = False
+
+          for alert in records.find({"email":email_type}):
+               list_alert.append(alert)
+               find_alert = True
+               
+          if find_alert:
+               st.markdown("<p style='color: RoyalBlue; font-weight: bold;'>Voici la liste des alertes associéées à ta boîte mail ! Elles seront automatiquement supprimées au bout de 30 jours 🙂</p>", unsafe_allow_html=True)
+               for alert in list_alert:
+                    alert = {key: alert[key] for key in sorted(alert.keys() & {'ville_destination', 'date', 'email', 'ville_depart'})}
+                    st.write(alert)
+
+          else :
+               st.markdown("<p style='color: RoyalBlue; font-weight: bold;'>Aucune alerte a été trouvé avec cette adresse mail... 😕 Tu peux en créer une dans l'onglet <i>Ajoute une nouvelle alerte</i> ! </p>", unsafe_allow_html=True)
 
 def color_df(val):
      if val =="OUI"+10*' ':
@@ -138,13 +167,24 @@ if __name__ == "__main__":
      ## End hide menu
 
 
+     if 'option_origine' not in st.session_state:
+          st.session_state['option_origine'] = False
+     
+     if 'option_destination' not in st.session_state:
+          st.session_state['option_destination'] = False
+     
+     if 'option_date' not in st.session_state:
+          st.session_state['option_date'] = False
+     
+     if 'all_dates' not in st.session_state:
+          st.session_state['all_dates'] = False
+     
+
+
      image = Image.open('photo_train.jpg')
      
-     #ctx = get_report_ctx()
-     #id = ctx.session_id
-     
+     email_type = ''
      col1_first, col2_first = st.columns(2)
-     #str_maj = mis_a_jour(id)
 
      with col1_first:
           st.markdown("<h2 style='color: RoyalBlue;'>Maxplorateur App - Recherche</h2>", unsafe_allow_html=True)
@@ -153,15 +193,12 @@ if __name__ == "__main__":
                
                Définissez vos critères dans la barre de gauche !
                """)
-          #st.markdown("<p style='color: RoyalBlue;'>Mise à jour des trains le : {} </p>".format(str_maj), unsafe_allow_html=True)
-          st.write("**Ce site évolue et ne sera bientôt plus accessible via cet URL ! Pour continuer à chercher des TGV Max, connecte toi ici : [Maxplorateur](https://maxplorateur.com/) 😉**")
-
-
           
      with col2_first:
-          st.image(image, caption='Photo by Ankush Minda', width = 350)
+          st.image(image, caption='Photo by Ankush Minda', width = 250)
      
      st.write(' ')
+
      col1, col2, col3 = st.columns(3)
 
 
@@ -175,14 +212,24 @@ if __name__ == "__main__":
 
      option_origine,option_destination,option_date,all_dates,bouton_launch_search = param(df_ville_origine,df_ville_destination)
 
+     if st.session_state.get('bouton_launch_search') == False:
+          st.session_state['bouton_launch_search'] = bouton_launch_search
 
-     if bouton_launch_search == True:
+     if (st.session_state['option_origine'] != option_origine) or (st.session_state['option_destination'] != option_destination) or (st.session_state['option_date'] != option_date) or (st.session_state['all_dates'] != all_dates):
+          st.session_state['bouton_launch_search'] = False
+          st.session_state['option_origine'] = option_origine
+          st.session_state['option_destination'] = option_destination
+          st.session_state['option_date'] = option_date
+          st.session_state['all_dates'] = all_dates
+
+
+     if st.session_state['bouton_launch_search'] == True:
           df_train_filter = dataframe_train(option_origine,option_destination,option_date,all_dates)
           if df_train_filter.shape[0] == 0:
                st.write(' ')
                st.markdown("<h4 style='text-align: center; color: RoyalBlue;'>Mince..  🙁 </h4>", unsafe_allow_html=True)
                st.markdown("<h4 style='text-align: center; color: RoyalBlue;'>Aucun trains éligibles à TGV max pour l'instant avec ces critères.</h4>", unsafe_allow_html=True)
-               st.markdown("<h6 style='text-align: center; color: RoyalBlue;'>Réessaye demain vers 9h-10h ! .</h6>", unsafe_allow_html=True)
+               st.markdown("<h6 style='text-align: center; color: RoyalBlue;'>Crée toi une alerte juste en dessous ! 🚨</h6>", unsafe_allow_html=True)
                st.write(' ')
                st.write(' ')
 
@@ -192,32 +239,34 @@ if __name__ == "__main__":
                st.dataframe(df_train_filter.style.applymap(color_df, subset=[df_train_filter.columns[-1]]),3000)
                st.write(' ')
           
+
           with st.expander("🚆 Informations importantes sur les trains"):
                st.write("""
-               ⚠️ Les trains affichés sont les trains **élligibles** à l'abonnement TGV Max. 
+                ⚠️ Les trains affichés sont les trains **élligibles** à l'abonnement TGV Max. 
 
-               Or, tous les trains éligibles à TGV Max n'ont plus forcément de places diponibles à 0 €.
+                Or, tous les trains éligibles à TGV Max n'ont plus forcément de places diponibles à 0 €.
           
-               C'est pourquoi tu retrouveras le champ "Places disponibles" dans la liste des trains proposés avec comme valeur :
+                C'est pourquoi tu retrouveras le champ "Places disponibles" dans la liste des trains proposés avec comme valeur :
 
                     - "OUI", lorsqu'il reste des places disponibles en TGV Max à 0 €.
 
-                    - "PEUT ETRE", lorsque je ne suis pas certain qu'il reste des places gratuites. 
-                    
-               En effet je n'ai malheureusement pas encore accès à toutes les données sur les TGV max de la SNCF, il y a donc des trains pour lesquels je ne sais pas si il reste des places dispos ou non.
-          
-               De plus, les données de l'application sont mises à jour une fois par jour en début de matinée. Et il se peut que la SNCF modifie plusieurs fois par jour l'éligibilité et / ou la disponibilité d'un train TGV Max. Il peut donc y avoir des inexactitudes entre ce que l'application renvoie et ce qui est proposé sur le site de la SNCF.  
+                    - "PEUT ETRE", lorsqu'il reste que très peu de places gratuites et que la dernière vient peut-être tout juste d'être vendue !  
                
-               C'est pourquoi il vaut mieux se connecter le **matin** sur l'application Maxplorateur !
+                """)
 
-               Mais pas de panique, je suis actuellement en train de résoudre ces problèmes !
-               
-               Partager ou parler autour de toi de cette application me permettra de gagner en visibilité auprès de la SNCF afin d'obtenir davantage de données sur les trains TGV Max et ainsi améliorer l'app Maxplorateur !
-               
-               Merci beaucoup 🙂
-               """)
-          with st.expander("📧 Recevez une alerte par mail lorsque qu'une place se libère !"):
-               formulaire()
+
+          if all_dates ==False:
+               st.markdown("<h4 style='color: RoyalBlue;'>Tu souhaites être alerté quand une place se libère ? 🚨🚨🚨</h4>", unsafe_allow_html=True)
+
+               tab1, tab2 = st.tabs(["Ajoute une nouvelle alerte", "L'ensemble de mes alertes"])
+               mongo_db_adress = st.secrets["mongo_db_adress"]
+               client = MongoClient(mongo_db_adress)
+               db = client.get_database('tgv_db')
+               records = db.alert_record
+               with tab1:
+                    create_mail(records)
+               with tab2:
+                    check_mail(records)
 
 
           with col1:
@@ -232,3 +281,4 @@ if __name__ == "__main__":
                     st.write('3O prochains jours')
                else:
                     st.write(option_date.strftime("%A %d %B %Y"))
+
