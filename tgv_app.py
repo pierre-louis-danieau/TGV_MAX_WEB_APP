@@ -6,7 +6,9 @@ import pandas as pd
 import streamlit as st
 from PIL import Image
 import locale
-from pymongo import MongoClient
+import sshtunnel
+from sqlalchemy.sql import text
+from sqlalchemy import create_engine
 
 
 
@@ -88,13 +90,15 @@ def dataframe_train(option_origine,option_destination,option_date,all_dates):
      df = df.reset_index(drop=True)
      return df
 
-def create_mail(records):
+def create_mail(conn):
      st.caption("Si tu souhaites recevoir une alerte par mail dès qu'une place se libère, renseigne ton adresse mail juste en-dessous ! :sunglasses:")
+     option_date = st.session_state.option_date
      st.caption(f"Rappel de ta recherche :   Ville de départ ➡️ :blue[{option_origine}],   Ville d'arrivée ➡️ :blue[{option_destination}],   Date ➡️ :blue[{option_date}]")
      email_type = st.text_input('Ton adresse email : ', key=1, value="", placeholder="prenom.nom@gmail.com")
      if email_type != '':
           find_another_alert = False
-          for alert_find in records.find({"email":email_type, 'ville_depart':option_origine, 'ville_destination':option_destination, 'date':option_date.strftime("%Y-%m-%d")}):
+          result_create_mail = conn.execute(text(f"SELECT * from alerts where email = '{email_type}' and ville_depart = '{option_origine}' and ville_destination = '{option_destination}' and date = '{option_date.strftime('%Y-%m-%d')}'")).fetchall()
+          for alert_find in result_create_mail:
                find_another_alert = True
                break
           
@@ -109,28 +113,32 @@ def create_mail(records):
                'time_added':datetime.now().strftime("%Y,%m,%d, %H:%M:%S")
                
           }
+          option_date = option_date.strftime("%Y-%m-%d")
+          time_added = datetime.now().strftime("%Y,%m,%d, %H:%M:%S")
+          insert_statement = text(f"INSERT INTO alerts (ville_depart, ville_destination, date, email, time_added) VALUES ('{option_origine}', '{option_destination}', '{option_date}', '{email_type}', '{time_added}')")
           if not find_another_alert:
-               records.insert_one(alert)
+               conn.execute(insert_statement)
           else:
                return
 
-def check_mail(records):
+def check_mail(conn):
      st.caption("Si tu souhaites connaître l'ensemble de tes alertes en cours, renseigne ton adresse email juste en dessous ! :sunglasses:")
      st.caption("Elles seront supprimées au bout de 30 jours ! ")
      email_type = st.text_input('Ton adresse email : ', key=2, value="", placeholder="prenom.nom@gmail.com")
      if email_type != '':
           list_alert = []
           find_alert = False
-
-          for alert in records.find({"email":email_type}):
+          result_check_mail = conn.execute(text(f"SELECT * from alerts where email = '{email_type}'")).fetchall()
+          for alert in result_check_mail:
                list_alert.append(alert)
                find_alert = True
                
           if find_alert:
                st.markdown("<p style='color: RoyalBlue; font-weight: bold;'>Voici la liste des alertes associéées à ta boîte mail ! Elles seront automatiquement supprimées au bout de 30 jours 🙂</p>", unsafe_allow_html=True)
                for alert in list_alert:
-                    alert = {key: alert[key] for key in sorted(alert.keys() & {'ville_destination', 'date', 'email', 'ville_depart'})}
-                    st.write(alert)
+                    #alert = {key: alert[key] for key in sorted(alert.keys() & {'ville_destination', 'date', 'email', 'ville_depart'})}
+                    alert_dict = {'ville de depart':alert[0], 'ville de destination': alert[1], 'date depart': alert[2], 'email': alert[3]}
+                    st.json(alert_dict)
 
           else :
                st.markdown("<p style='color: RoyalBlue; font-weight: bold;'>Aucune alerte a été trouvé avec cette adresse mail... 😕 Tu peux en créer une dans l'onglet <i>Ajoute une nouvelle alerte</i> ! </p>", unsafe_allow_html=True)
@@ -259,14 +267,19 @@ if __name__ == "__main__":
                st.markdown("<h4 style='color: RoyalBlue;'>Tu souhaites être alerté quand une place se libère ? 🚨🚨🚨</h4>", unsafe_allow_html=True)
 
                tab1, tab2 = st.tabs(["Ajoute une nouvelle alerte", "L'ensemble de mes alertes"])
-               mongo_db_adress = st.secrets["mongo_db_adress"]
-               client = MongoClient(mongo_db_adress)
-               db = client.get_database('tgv_db')
-               records = db.alert_record
+               tunnel = sshtunnel.SSHTunnelForwarder(
+               ('ssh.pythonanywhere.com'), ssh_username='pierrelouisdanieau', ssh_password=st.secrets["ssh_password"],
+               remote_bind_address=('pierrelouisdanieau.mysql.pythonanywhere-services.com', 3306)
+               )
+               tunnel.start()
+               password_db = st.secrets["password_db"]
+               db_url = 'mysql+pymysql://pierrelouisdanie:{}@127.0.0.1:{}/pierrelouisdanie$train'.format(password_db, tunnel.local_bind_port)
+               engine = create_engine(db_url)
+               conn = engine.connect()
                with tab1:
-                    create_mail(records)
+                    create_mail(conn)
                with tab2:
-                    check_mail(records)
+                    check_mail(conn)
 
 
           with col1:
@@ -281,4 +294,9 @@ if __name__ == "__main__":
                     st.write('3O prochains jours')
                else:
                     st.write(option_date.strftime("%A %d %B %Y"))
+          
+          if all_dates ==False:
+               conn.commit()
+
+               conn.close()
 
